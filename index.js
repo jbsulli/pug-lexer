@@ -434,7 +434,7 @@ Lexer.prototype = {
     if (value + prefix === '') return;
     prefix = prefix || '';
     var indexOfEnd = this.interpolated ? value.indexOf(']') : -1;
-    var indexOfStart = value.indexOf('#[');
+    var indexOfStart =  this.interpolationAllowed ? value.indexOf('#[') : -1;
     var indexOfEscaped = value.indexOf('\\#[');
     var matchOfStringInterp = /(\\)?([#!]){((?:.|\n)*)$/.exec(value);
     var indexOfStringInterp = this.interpolationAllowed && matchOfStringInterp ? matchOfStringInterp.index : Infinity;
