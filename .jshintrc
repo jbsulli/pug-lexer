@@ -1,0 +1,7 @@
+{
+    "node":true,
+    "undef": true,
+    "unused": "vars",
+    "esversion": 6,
+    "boss": true
+}

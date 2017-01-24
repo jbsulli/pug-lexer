@@ -1,4 +1,4 @@
-'use strict';
+/*'use strict';
 
 var fs = require('fs');
 var assert = require('assert');
@@ -58,3 +58,4 @@ fs.readdirSync(edir).forEach(function (testCase) {
     }
   }
 });
+*/

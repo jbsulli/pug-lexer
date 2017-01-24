@@ -300,7 +300,7 @@ Lexer.prototype = {
       this.error('NO_END_BRACKET', 'End of line was reached with no closing bracket for interpolation.');
     }
     for (var i = 0; this.indentStack[i]; i++) {
-      this.tokens.push(this.tok('outdent'));
+      this.tokens.push(this.tokEnd(this.tok('outdent')));
     }
     this.tokens.push(this.tokEnd(this.tok('eos')));
     this.ended = true;
@@ -606,7 +606,7 @@ Lexer.prototype = {
   "extends": function() {
     var tok = this.scan(/^extends?(?= |$|\n)/, 'extends');
     if (tok) {
-      this.tokens.push(tok);
+      this.tokens.push(this.tokEnd(tok));
       if (!this.callLexerFunction('path')) {
         this.error('NO_EXTENDS_PATH', 'missing path for extends');
       }
@@ -675,10 +675,11 @@ Lexer.prototype = {
         name = name.split('//')[0].trim();
       }
       if (!name) return;
-      this.consume(captures[0].length - comment.length);
       var tok = this.tok('block', name);
+      this.consume(captures[0].length - comment.length);
       tok.mode = 'replace';
-      this.tokens.push(tok);
+      this.incrementColumn(captures[0].length - comment.length);
+      this.tokens.push(this.tokEnd(tok));
       return true;
     }
   },
@@ -739,7 +740,7 @@ Lexer.prototype = {
   path: function() {
     var tok = this.scanEndOfLine(/^ ([^\n]+)/, 'path');
     if (tok && (tok.val = tok.val.trim())) {
-      this.tokens.push(tok);
+      this.tokens.push(this.tokEnd(tok));
       return true;
     }
   },
@@ -938,7 +939,7 @@ Lexer.prototype = {
       this.assertExpression(captures[3])
       tok.code = captures[3];
       this.incrementColumn(captures[3].length);
-      this.tokens.push(tok);
+      this.tokens.push(this.tokEnd(tok));
       return true;
     }
     if (this.scan(/^(?:each|for)\b/)) {
@@ -1027,7 +1028,7 @@ Lexer.prototype = {
   blockCode: function() {
     var tok
     if (tok = this.scanEndOfLine(/^-/, 'blockcode')) {
-      this.tokens.push(tok);
+      this.tokens.push(this.tokEnd(tok));
       this.interpolationAllowed = false;
       this.callLexerFunction('pipelessText');
       return true;
@@ -1097,10 +1098,11 @@ Lexer.prototype = {
     }
     
     tok.name = key;
+    tok.mustEscape = true;
     
     str = this.attributeValue(tok, str.substr(i));
     
-    tok.val = tok.val == '' ? true : tok.val;
+    tok.val = tok.val === '' ? true : tok.val;
     
     this.tokens.push(this.tokEnd(tok));
     
@@ -1130,16 +1132,16 @@ Lexer.prototype = {
   attributeValue: function(tok, str){
     var quoteRe = /['"]/;
     var whitespaceRe = /[ \n\t]/;
-    var val = '';
+    var val = tok.val = '';
     var done, i, x;
-    var escapedAttr = true;
+    var escapeAttr = true;
     var state = characterParser.defaultState();
     var col = this.colno;
     var line = this.lineno;
     
     characterParser.defaultState();
     
-    // consume all whitespace before the value
+    // consume all whitespace before the equals sign
     for(i = 0; i < str.length; i++){
       if(!whitespaceRe.test(str[i])) break;
       if(str[i] === '\n'){
@@ -1155,7 +1157,7 @@ Lexer.prototype = {
     }
     
     if(str[i] === '!'){
-      escapedAttr = false;
+      escapeAttr = false;
       col++;
       i++;
       if (str[i] !== '=') this.error('INVALID_KEY_CHARACTER', 'Unexpected character ' + str[i] + ' expected `=`');
@@ -1169,9 +1171,22 @@ Lexer.prototype = {
     this.colno = col + 1;
     i++;
     
+    // consume all whitespace before the value
+    for(; i < str.length; i++){
+      if(!whitespaceRe.test(str[i])) break;
+      if(str[i] === '\n'){
+        this.incrementLine(1);
+      } else {
+        this.incrementColumn(1);
+      }
+    }
+    
     // start looping through the value
     for (; i < str.length; i++) {
-      if (whitespaceRe.test(str[i])) {
+      // if the character is in a string or in parentheses/brackets/braces
+      if (!(state.isNesting() || state.isString() || !this.assertExpression(val, true))){
+        
+        if (whitespaceRe.test(str[i])) {
           done = false;
           
           // find the first non-whitespace character
@@ -1198,27 +1213,22 @@ Lexer.prototype = {
         if(str[i] === ','){
           break;
         }
-        
-        state = characterParser.parseChar(str[i], state);
-        val += str[i];
-        
-        if (str[i] === '\n') {
-          this.incrementLine(1);
-        }
-        
-        else if (str[i] !== undefined) {
-          this.incrementColumn(1);
-        }
-        
-        // if the character is in a string or in parentheses/brackets/braces
-        if (state.isNesting() || state.isString()) continue;
-        
-        // if the current value expression is not valid JavaScript, then
-        // assume that the user did not end the value
-        if (!this.assertExpression(val, true)) continue;
+      }
+      
+      state = characterParser.parseChar(str[i], state);
+      val += str[i];
+      
+      if (str[i] === '\n') {
+        this.incrementLine(1);
+      }
+      
+      else if (str[i] !== undefined) {
+        this.incrementColumn(1);
+      }
     }
     
     tok.val = val;
+    tok.mustEscape = escapeAttr;
     
     return str.substr(i);
   },
@@ -1473,9 +1483,8 @@ Lexer.prototype = {
           if (this.indentStack[1] < indents) {
             this.error('INCONSISTENT_INDENTATION', 'Inconsistent indentation. Expecting either ' + this.indentStack[1] + ' or ' + this.indentStack[0] + ' spaces/tabs.');
           }
-          tok = this.tok('outdent');
+          this.tokens.push(this.tokEnd(this.tok('outdent')));
           this.colno = this.indentStack[1] + 1;
-          this.tokens.push(this.tokEnd(tok));
           this.indentStack.shift();
         }
       // indent
@@ -1503,7 +1512,7 @@ Lexer.prototype = {
 
     indents = indents || captures && captures[1].length;
     if (indents > this.indentStack[0]) {
-      this.tokens.push(this.tok('start-pipeless-text'));
+      this.tokens.push(this.tokEnd(this.tok('start-pipeless-text')));
       var tokens = [];
       var isMatch;
       // Index in this.input. Can't use this.consume because we might need to
@@ -1531,12 +1540,14 @@ Lexer.prototype = {
       this.consume(stringPtr);
       while (this.input.length === 0 && tokens[tokens.length - 1] === '') tokens.pop();
       tokens.forEach(function (token, i) {
+        var tok;
         this.incrementLine(1);
-        if (i !== 0) this.tokens.push(this.tok('newline'));
+        if (i !== 0) tok = this.tok('newline');
         this.incrementColumn(indents);
+        if (tok) this.tokens.push(this.tokEnd(tok));
         this.addText('text', token);
       }.bind(this));
-      this.tokens.push(this.tok('end-pipeless-text'));
+      this.tokens.push(this.tokEnd(this.tok('end-pipeless-text')));
       return true;
     }
   },
@@ -1560,7 +1571,7 @@ Lexer.prototype = {
   colon: function() {
     var tok = this.scan(/^: +/, ':');
     if (tok) {
-      this.tokens.push(tok);
+      this.tokens.push(this.tokEnd(tok));
       return true;
     }
   },
