@@ -1197,6 +1197,9 @@ Lexer.prototype = {
       }
     }
     
+    line = this.lineno;
+    col = this.colno;
+    
     // start looping through the value
     for (; i < str.length; i++) {
       // if the character is in a string or in parentheses/brackets/braces
@@ -1235,11 +1238,17 @@ Lexer.prototype = {
       val += str[i];
       
       if (str[i] === '\n') {
-        this.incrementLine(1);
+        line++;
+        col = 1;
       } else {
-        this.incrementColumn(1);
+        col++;
       }
     }
+    
+    this.assertExpression(val);
+    
+    this.lineno = line;
+    this.colno = col;
     
     tok.val = val;
     tok.mustEscape = escapeAttr;
