@@ -1,23 +1,28 @@
-const readline = require('readline');
+//const readline = require('readline');
 const chalk = require('chalk');
 const fs = require('fs');
-const lex = require('../');
+const lex = require('./index.js');
 const path = require('path');
 
-const rl = readline.createInterface({
+/*const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
-});
+});*/
 
-const dir = path.join(__dirname, 'cases');
+const dir = path.join(__dirname, 'test', 'cases');
 
 var files = [];
+var file_pos = -1;
 var file, src, expected_tokens, actual_tokens, pos, last_line;
+var last_token = false;
+var response_handler;
+var run_pause = false;
 
 // modes
 var mode_json = true;
 var mode_move_start = false;
 var mode_show_token = false;
+var mode_run = false;
 
 fs.readdirSync(dir).forEach(file => {
     if(/\.pug$/.test(file)){
@@ -114,12 +119,15 @@ function fixEndpoints(l, s, f, min_line){
 }
 
 function nextFile(){
-    if(files.length === 0){
-        rl.close();
+    file_pos++;
+    
+    if(file_pos >= files.length){
+        process.stdout.write('\x1B[2J\x1B[0f');
+        console.log('No more files to parse');
         return;
     }
     
-    file = files.shift();
+    file = files[file_pos];
     
     const filepath = path.join(dir, file);
     const expectedpath = filepath.replace(/\.pug$/, '.expected.json');
@@ -128,7 +136,25 @@ function nextFile(){
     expected_tokens = fs.readFileSync(expectedpath, 'utf8').split(/\n/).map(JSON.parse);
     last_line = pos = 0;
     src = src.split(/(?:\r\n|\n|\r)/g);
+    
+    if(last_token){
+        last_token = false;
+        pos = Math.max(actual_tokens.length, expected_tokens.length) - 1;
+        last_line = (expected_tokens[pos] || actual_tokens[pos]).loc.start.line || 0;
+    }
+    
     process.nextTick(nextToken);
+}
+
+function safeGet(o, path){
+    path = path.split('.');
+    while(path.length){
+        if(!o || typeof o !== 'object'){
+            return undefined;
+        }
+        o = o[path.shift()];
+    }
+    return o;
 }
 
 function nextToken(){
@@ -138,8 +164,31 @@ function nextToken(){
         return;
     }
     
-    var actual = actual_tokens[pos];
-    var expected = expected_tokens[pos];
+    process.stdout.write('\x1B[2J\x1B[0f');
+    
+    var actual = actual_tokens[pos] || {};
+    var expected = expected_tokens[pos] || {};
+    
+    const match = (
+        safeGet(actual, 'loc.filename') &&
+        safeGet(actual, 'loc.filename') === safeGet(expected, 'loc.filename') &&
+        safeGet(actual, 'loc.start.line') === safeGet(expected, 'loc.start.line') &&
+        safeGet(actual, 'loc.start.column') === safeGet(expected, 'loc.start.column') &&
+        safeGet(actual, 'loc.end.line') === safeGet(expected, 'loc.end.line') &&
+        safeGet(actual, 'loc.end.column') === safeGet(expected, 'loc.end.column') ? true : false);
+        
+    console.log(
+        safeGet(actual, 'loc.filename'),
+        safeGet(actual, 'loc.filename') === safeGet(expected, 'loc.filename'),
+        safeGet(actual, 'loc.start.line') === safeGet(expected, 'loc.start.line'),
+        safeGet(actual, 'loc.start.column') === safeGet(expected, 'loc.start.column'),
+        safeGet(actual, 'loc.end.line') === safeGet(expected, 'loc.end.line'),
+        safeGet(actual, 'loc.end.column') === safeGet(expected, 'loc.end.column')
+    );
+    
+    console.log(chalk[match ? 'green' : 'red'](file.replace(/\.pug$/, '')), chalk.gray('@'), chalk.white(pos + 1));
+    console.log(chalk.gray('  actual:'), chalk.white(`${safeGet(actual, 'loc.start.line')}:${safeGet(actual, 'loc.start.column')}`) + chalk.gray(' to ') + chalk.white(`${safeGet(actual, 'loc.end.line')}:${safeGet(actual, 'loc.end.column')}`));
+    console.log(chalk.gray('expected:'), chalk.white(`${safeGet(expected, 'loc.start.line')}:${safeGet(expected, 'loc.start.column')}`) + chalk.gray(' to ') + chalk.white(`${safeGet(expected, 'loc.end.line')}:${safeGet(expected, 'loc.end.column')}`));
     
     actual.loc = initLoc(actual.loc);
     expected.loc = initLoc(expected.loc);
@@ -147,16 +196,6 @@ function nextToken(){
     const a = actual.loc;
     const e = expected.loc;
     
-    const match = (
-        a.filename &&
-        a.filename === e.filename &&
-        a.start.line === e.start.line &&
-        a.start.column === e.start.column &&
-        a.end.line === e.end.line &&
-        a.end.column === e.end.column ? true : false);
-    
-    process.stdout.write('\x1B[2J\x1B[0f');
-    console.log(chalk.white(e.start.line + ':' + e.start.column), chalk.gray('to'), chalk.white(e.end.line + ':' + e.end.column));
     
     if(mode_show_token){
         console.log(JSON.stringify(actual, null, 4));
@@ -176,14 +215,19 @@ function nextToken(){
     fixEndpoints((use_actual ? a : e), s, f, last_line);
     last_line = s.line;
     
-    console.log(chalk[match ? 'green' : 'red'](file.replace(/\.pug$/, '')), chalk.gray('@'), chalk.white(pos + 1) + chalk.gray(':'), chalk.white(`${s.line}:${s.column}`) + chalk.gray(' to ') + chalk.white(`${f.line}:${f.column}`));
-    console.log(chalk.white((actual ? ('' + actual.type).toUpperCase() || 'undefined' : 'undefined')));
+    console.log(chalk.gray(' will be:'), chalk.white(`${s.line}:${s.column}`) + chalk.gray(' to ') + chalk.white(`${f.line}:${f.column}`));
+    console.log('    ' + (mode_json ? ' ' : '') + chalk.white((actual ? ('' + actual.type).toUpperCase() || 'undefined' : 'undefined')));
     
-    /*if(match){
+    if(match && mode_run && run_pause !== pos){
+        run_pause = -1;
         pos++;
         process.nextTick(nextToken);
         return;
-    }*/
+    }
+    
+    if(mode_run){
+        run_pause = pos;
+    }
     
     setPos(expected.loc.start, s);
     setPos(expected.loc.end, f);
@@ -192,6 +236,8 @@ function nextToken(){
     
     for(i = s.line - 2; i < f.line + 3; i++){
         t = src[i - 1];
+        
+        if(i === 1 && t.charAt(0) === '\uFEFF') t = t.substr(1);
         
         if(i > src.length || i < 1){
             t = chalk.bgRed(' ');
@@ -283,7 +329,7 @@ function nextToken(){
                     }
                     l += chalk.white[bg](j);
                     
-                    t = (mode_json ? chalk.gray('"') + l + chalk.green[bg]('"') : l);
+                    t = (mode_json ? chalk.gray('"') + l + chalk.white[bg]('"') : l);
                 }
                 else if(i === f.line){
                     l = '';
@@ -302,7 +348,7 @@ function nextToken(){
                     }
                     l += chalk.gray(j);
                     
-                    t = (mode_json ? chalk.green[bg]('"') + l + chalk.gray('"') : l);
+                    t = (mode_json ? chalk.white[bg]('"') + l + chalk.gray('"') : l);
                 }
             }
         }
@@ -310,49 +356,89 @@ function nextToken(){
         console.log((i < 10 ? (i < 0 ? '  ' + i : '   ' + i) : (i < 100 ? '  ' + i : (i < 1000 ? ' ' + i : i))) + '|', t);
     }
     
-    rl.question('    | ' + (mode_json ? ' ' : ''), (response) => {
-        if(response === ''){
-            saveToken();
-            pos++;
-            process.nextTick(nextToken);
-            return;
-        }
-        
-        var target;
-        
+    response_handler = (response) => {
         for(var i = 0; i < response.length; i++){
-            target = (mode_move_start ? expected.loc.start : expected.loc.end);
-            console.log(target.line + ':' + target.column);
             switch(response.charAt(i)){
                 case 'a':
-                    if(target.column > 1) target.column--;
-                    else setLineEnd(target, target.line - 1);
+                    if(expected.loc.end.column > 1) expected.loc.end.column--;
+                    else setLineEnd(expected.loc.end, expected.loc.end.line - 1);
                     break;
                 case 'd':
-                    if(target.column < src[target.line - 1].length + 1) target.column++;
-                    else setLineStart(target, target.line + 1);
+                    if(expected.loc.end.column < src[expected.loc.end.line - 1].length + 1) expected.loc.end.column++;
+                    else setLineStart(expected.loc.end, expected.loc.end.line + 1);
                     break;
-                case 'x':
+                case 'q':
+                    if(expected.loc.start.column > 1) expected.loc.start.column--;
+                    else{
+                        last_line--;
+                        setLineEnd(expected.loc.start, expected.loc.start.line - 1);
+                    }
+                    break;
+                case 'e':
+                    if(expected.loc.start.column < src[expected.loc.start.line - 1].length + 1) expected.loc.start.column++;
+                    else setLineStart(expected.loc.start, expected.loc.start.line + 1);
+                    break;
+                case 'f':
                     mode_json = !mode_json;
                     break;
-                case 'z':
+                case 'v':
                     mode_show_token = !mode_show_token;
                     break;
+                case 'w':
+                    mode_run = false;
+                    if(pos > 0){
+                        pos--;
+                        last_line = 1;
+                    } else {
+                        file_pos -= 2;
+                        last_token = true;
+                        process.nextTick(nextFile);
+                        return;
+                    }
+                    break;
+                case 's':
+                    mode_run = false;
+                    pos++;
+                    break;
+                case 'z':
+                    file_pos -= 2;
+                    process.nextTick(nextFile);
+                    return;
                 case 'c':
-                    mode_move_start = !mode_move_start;
+                    process.nextTick(nextFile);
+                    return;
+                case 'r':
+                    mode_run = !mode_run;
+                    run_pause = -1;
+                    pos++;
+                    break;
+                case ' ':
+                    saveToken();
+                    pos++;
+                    break;
+                case '\u0003':
+                    process.exit();
                     break;
             }
         }
         
-        rl.question(target.line + ':' + target.column, () => {
-            process.nextTick(nextToken);
-        });
+        process.nextTick(nextToken);
         
-    });
+    };
 }
 
 function saveToken(){
-    
+    const filepath = path.join(dir, file);
+    const expectedpath = filepath.replace(/\.pug$/, '.expected.json');
+    fs.writeFileSync(expectedpath, expected_tokens.map(JSON.stringify).join('\n'));
 }
 
 nextFile();
+
+process.stdin.setRawMode(true);
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+process.stdin.on('data', function(key){
+    response_handler(key);
+});

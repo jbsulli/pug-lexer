@@ -1,8 +1,8 @@
-{"type":"tag","val":"fb:user:role","loc":{"start":{"line":1,"column":1},"filename":"/cases/namespaces.pug","end":{"line":0,"column":0}}}
-{"type":"text","val":"Something","loc":{"start":{"line":1,"column":14},"filename":"/cases/namespaces.pug","end":{"line":0,"column":0}}}
-{"type":"newline","loc":{"start":{"line":2,"column":1},"filename":"/cases/namespaces.pug","end":{"line":0,"column":0}}}
-{"type":"tag","val":"foo","loc":{"start":{"line":2,"column":1},"filename":"/cases/namespaces.pug","end":{"line":0,"column":0}}}
-{"type":"start-attributes","loc":{"start":{"line":2,"column":4},"filename":"/cases/namespaces.pug","end":{"line":0,"column":0}}}
-{"type":"attribute","name":"fb:foo","val":"'bar'","mustEscape":true,"loc":{"start":{"line":2,"column":5},"filename":"/cases/namespaces.pug","end":{"line":0,"column":0}}}
-{"type":"end-attributes","loc":{"start":{"line":2,"column":17},"filename":"/cases/namespaces.pug","end":{"line":0,"column":0}}}
-{"type":"eos","loc":{"start":{"line":2,"column":18},"filename":"/cases/namespaces.pug","end":{"line":0,"column":0}}}
+{"type":"tag","val":"fb:user:role","loc":{"start":{"line":1,"column":1},"filename":"/cases/namespaces.pug","end":{"line":1,"column":13}}}
+{"type":"text","val":"Something","loc":{"start":{"line":1,"column":14},"filename":"/cases/namespaces.pug","end":{"line":1,"column":23}}}
+{"type":"newline","loc":{"start":{"line":2,"column":1},"filename":"/cases/namespaces.pug","end":{"line":2,"column":1}}}
+{"type":"tag","val":"foo","loc":{"start":{"line":2,"column":1},"filename":"/cases/namespaces.pug","end":{"line":2,"column":4}}}
+{"type":"start-attributes","loc":{"start":{"line":2,"column":4},"filename":"/cases/namespaces.pug","end":{"line":2,"column":5}}}
+{"type":"attribute","name":"fb:foo","val":"'bar'","mustEscape":true,"loc":{"start":{"line":2,"column":5},"filename":"/cases/namespaces.pug","end":{"line":2,"column":17}}}
+{"type":"end-attributes","loc":{"start":{"line":2,"column":17},"filename":"/cases/namespaces.pug","end":{"line":2,"column":18}}}
+{"type":"eos","loc":{"start":{"line":2,"column":18},"filename":"/cases/namespaces.pug","end":{"line":2,"column":18}}}

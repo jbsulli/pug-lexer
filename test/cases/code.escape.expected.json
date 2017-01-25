@@ -1,6 +1,6 @@
-{"type":"tag","val":"p","loc":{"start":{"line":1,"column":1},"filename":"/cases/code.escape.pug","end":{"line":0,"column":0}}}
-{"type":"code","val":"'<script>'","mustEscape":true,"buffer":true,"loc":{"start":{"line":1,"column":2},"filename":"/cases/code.escape.pug","end":{"line":0,"column":0}}}
-{"type":"newline","loc":{"start":{"line":2,"column":1},"filename":"/cases/code.escape.pug","end":{"line":0,"column":0}}}
-{"type":"tag","val":"p","loc":{"start":{"line":2,"column":1},"filename":"/cases/code.escape.pug","end":{"line":0,"column":0}}}
-{"type":"code","val":"'<script>'","mustEscape":false,"buffer":true,"loc":{"start":{"line":2,"column":2},"filename":"/cases/code.escape.pug","end":{"line":0,"column":0}}}
-{"type":"eos","loc":{"start":{"line":2,"column":15},"filename":"/cases/code.escape.pug","end":{"line":0,"column":0}}}
+{"type":"tag","val":"p","loc":{"start":{"line":1,"column":1},"filename":"/cases/code.escape.pug","end":{"line":1,"column":2}}}
+{"type":"code","val":"'<script>'","mustEscape":true,"buffer":true,"loc":{"start":{"line":1,"column":2},"filename":"/cases/code.escape.pug","end":{"line":1,"column":14}}}
+{"type":"newline","loc":{"start":{"line":2,"column":1},"filename":"/cases/code.escape.pug","end":{"line":2,"column":1}}}
+{"type":"tag","val":"p","loc":{"start":{"line":2,"column":1},"filename":"/cases/code.escape.pug","end":{"line":2,"column":2}}}
+{"type":"code","val":"'<script>'","mustEscape":false,"buffer":true,"loc":{"start":{"line":2,"column":2},"filename":"/cases/code.escape.pug","end":{"line":2,"column":15}}}
+{"type":"eos","loc":{"start":{"line":2,"column":15},"filename":"/cases/code.escape.pug","end":{"line":2,"column":15}}}

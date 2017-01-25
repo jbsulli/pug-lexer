@@ -1,4 +1,4 @@
-{"type":"tag","val":"p","loc":{"start":{"line":1,"column":1},"filename":"/cases/utf8bom.pug","end":{"line":0,"column":0}}}
-{"type":"text","val":"\"foo\"","loc":{"start":{"line":1,"column":3},"filename":"/cases/utf8bom.pug","end":{"line":0,"column":0}}}
-{"type":"newline","loc":{"start":{"line":2,"column":1},"filename":"/cases/utf8bom.pug","end":{"line":0,"column":0}}}
-{"type":"eos","loc":{"start":{"line":2,"column":1},"filename":"/cases/utf8bom.pug","end":{"line":0,"column":0}}}
+{"type":"tag","val":"p","loc":{"start":{"line":1,"column":1},"filename":"/cases/utf8bom.pug","end":{"line":1,"column":2}}}
+{"type":"text","val":"\"foo\"","loc":{"start":{"line":1,"column":3},"filename":"/cases/utf8bom.pug","end":{"line":1,"column":8}}}
+{"type":"newline","loc":{"start":{"line":2,"column":1},"filename":"/cases/utf8bom.pug","end":{"line":2,"column":1}}}
+{"type":"eos","loc":{"start":{"line":2,"column":1},"filename":"/cases/utf8bom.pug","end":{"line":2,"column":1}}}
